@@ -19,3 +19,5 @@ To run the service, you can use the following command:
 ```bash
 go run ./cmd/app/main.go
 ```
+
+Note: postman collection in the root directory of the project.
