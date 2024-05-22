@@ -1,0 +1,127 @@
+{
+	"info": {
+		"_postman_id": "399ad885-e896-4773-abc1-f5e54c0a4739",
+		"name": "Development",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "29762100"
+	},
+	"item": [
+		{
+			"name": "Create Voucher",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"brand_code\": \"ALFM\",\r\n    \"sku\": \"ALFM25\",\r\n    \"sku_name\": \"Voucher Alfamart 15k\",\r\n    \"nominal\": 15000,\r\n    \"distributor_price\": 14000,\r\n    \"product_status\": \"available\",\r\n    \"order_destination\": \"VC\",\r\n    \"stock\": 76,\r\n    \"vendor\": \"Super Voucher\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "{{base_url}}/api/vouchers"
+			},
+			"response": []
+		},
+		{
+			"name": "Find With Filter",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"brand_code\": \"IDMR\",\r\n    \"sku\": \"IDMR50\",\r\n    \"sku_name\": \"Voucher Indomaret 50k\",\r\n    \"nominal\": 50000,\r\n    \"distributor_price\": 49000,\r\n    \"product_status\": \"available\",\r\n    \"order_destination\": \"VC\",\r\n    \"stock\": 76,\r\n    \"vendor\": \"Ultra Voucher\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/vouchers/filter",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"vouchers",
+						"filter"
+					],
+					"query": [
+						{
+							"key": "brand_code",
+							"value": "IDMR",
+							"disabled": true
+						},
+						{
+							"key": "sku",
+							"value": "IDMR100",
+							"disabled": true
+						},
+						{
+							"key": "sku_name",
+							"value": "",
+							"disabled": true
+						},
+						{
+							"key": "nominal",
+							"value": null,
+							"disabled": true
+						},
+						{
+							"key": "distributor_price",
+							"value": null,
+							"disabled": true
+						},
+						{
+							"key": "product_status",
+							"value": "available",
+							"disabled": true
+						},
+						{
+							"key": "order_destination",
+							"value": null,
+							"disabled": true
+						},
+						{
+							"key": "stock",
+							"value": null,
+							"disabled": true
+						},
+						{
+							"key": "vendor",
+							"value": "Super Voucher",
+							"disabled": true
+						},
+						{
+							"key": "order_by",
+							"value": "nominal",
+							"disabled": true
+						},
+						{
+							"key": "sort_order",
+							"value": "asc",
+							"description": "[\"asc\" or \"desc\"]",
+							"disabled": true
+						},
+						{
+							"key": "page",
+							"value": null,
+							"disabled": true
+						},
+						{
+							"key": "size",
+							"value": null,
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
