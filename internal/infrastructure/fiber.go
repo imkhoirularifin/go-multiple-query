@@ -31,9 +31,9 @@ func Run() {
 	app.Use(requestid.New())
 
 	// Grouping Routes
-	api := app.Group("/api")
+	api := app.Group("/api/v1")
 	docs.NewHttpHandler(api.Group("/docs"))
-	voucher.NewHTTPHandler(api.Group("/vouchers"), voucherService, logger)
+	voucher.NewHTTPHandler(api.Group("/vouchers"), voucherService, db, logger)
 
 	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
 	logger.Info().Msgf("Server is running on address: %s", addr)

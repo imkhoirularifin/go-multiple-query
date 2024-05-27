@@ -20,4 +20,37 @@ To run the service, you can use the following command:
 go run ./cmd/app/main.go
 ```
 
-Note: postman collection in the root directory of the project.
+## Documentation
+
+base path: /api/v1
+
+Query Params
+
+| Name        | Required | Default | Description     |
+| ----------- | -------- | ------- | --------------- |
+| `page`      | false    | 1       |                 |
+| `limit`     | false    | 10      |                 |
+| `orderBy`   | false    | -       |                 |
+| `sortOrder` | false    | asc     | `asc` or `desc` |
+| `$key`      | false    | -       | filter key      |
+| `$value`    | false    | -       | filter value    |
+
+Note:
+
+`$key` should be in camelCase
+
+## Filter Criteria
+
+- `equal`
+- `notEqual`
+- `greaterThanOrEqual`
+- `lessThanOrEqual`
+- `greaterThan`
+- `lessThan`
+- `in` (Support multiple values separated by comma)
+
+## Example
+
+```bash
+curl -X GET "http://localhost:8080/api/v1/vouchers?page=1&limit=10&orderBy=skuName&sortOrder=asc&sku.equal=IDMR100"
+```

@@ -18,14 +18,10 @@ type Voucher struct {
 type VoucherRepository interface {
 	FindByID(id primitive.ObjectID) (*Voucher, error)
 	Store(voucher *Voucher) (*Voucher, error)
-	Count(filter VoucherFilter) (int64, error)
-	FindWithFilter(filter VoucherFilter) ([]*Voucher, int, error)
 }
 
 type VoucherService interface {
 	Store(voucher *Voucher) (*Voucher, error)
-	Count(filter VoucherFilter) (int64, error)
-	FindWithFilter(filter VoucherFilter) ([]*Voucher, int, error)
 }
 
 type StoreVoucherRequest struct {

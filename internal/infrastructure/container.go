@@ -7,6 +7,7 @@ import (
 	"go-multiple-query/pkg/xlogger"
 
 	"github.com/caarlos0/env/v10"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	_ "github.com/joho/godotenv/autoload"
 )
@@ -17,6 +18,8 @@ var (
 	voucherRepo domain.VoucherRepository
 
 	voucherService domain.VoucherService
+
+	db *mongo.Database
 )
 
 func init() {
@@ -25,7 +28,7 @@ func init() {
 	}
 	xlogger.Setup(cfg)
 
-	db := mongodbSetup()
+	db = mongodbSetup()
 
 	voucherRepo = voucher.NewMongoRepository(db)
 
