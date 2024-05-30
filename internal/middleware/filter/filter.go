@@ -303,6 +303,218 @@ func FilterMiddleware[entity any](db *mongo.Database, collectionName string) fib
 	}
 }
 
+// return query and findOptions
+func FilterMiddlewareV2() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		queries := c.Queries()
+		page := queries["page"]
+		limit := queries["limit"]
+		orderBy := queries["orderBy"]
+		sortOrder := queries["sortOrder"]
+		var queryRequest domain.QueryRequest
+		var findOptions *options.FindOptions
+
+		queryFilters, err := parseQueriesToFilters(queries)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(domain.Response{
+				Code:    fiber.StatusBadRequest,
+				Errors:  []string{err.Error()},
+				Message: "invalid query key",
+			})
+		}
+
+		queryRequest.Filters = queryFilters
+
+		if page == "" {
+			queryRequest.Page = 1
+		} else {
+			p, err := strconv.ParseInt(page, 10, 64)
+			if err != nil {
+				return c.Status(fiber.StatusBadRequest).JSON(domain.Response{
+					Code:    fiber.StatusBadRequest,
+					Status:  "error",
+					Message: "Invalid page query",
+				})
+			}
+			queryRequest.Page = int(p)
+		}
+
+		if limit == "" {
+			queryRequest.Limit = 10
+		} else {
+			l, err := strconv.ParseInt(limit, 10, 64)
+			if err != nil {
+				return c.Status(fiber.StatusBadRequest).JSON(domain.Response{
+					Code:    fiber.StatusBadRequest,
+					Status:  "error",
+					Message: "Invalid limit query",
+				})
+			}
+			queryRequest.Limit = int(l)
+		}
+
+		if orderBy != "" {
+			convertedOrderBy := utilities.ToSnakeCase(orderBy)
+			queryRequest.OrderBy = convertedOrderBy
+
+			if sortOrder != "" {
+				// check if sortOrder is valid
+				if sortOrder != "asc" && sortOrder != "desc" {
+					return c.Status(fiber.StatusBadRequest).JSON(domain.Response{
+						Code:    fiber.StatusBadRequest,
+						Status:  "error",
+						Message: "Invalid sort order",
+					})
+				}
+
+				queryRequest.SortOrder = sortOrder
+			} else {
+				queryRequest.SortOrder = "asc"
+			}
+		}
+
+		query := bson.M{}
+		offset := (queryRequest.Page - 1) * queryRequest.Limit
+
+		if queryRequest.OrderBy != "" {
+			var sortOrder int
+			if queryRequest.SortOrder == "" {
+				sortOrder = 1
+			} else if queryRequest.SortOrder == "asc" {
+				sortOrder = 1
+			} else {
+				sortOrder = -1
+			}
+
+			findOptions = options.Find().
+				SetLimit(int64(queryRequest.Limit)).
+				SetSkip(int64(offset)).
+				SetSort(bson.D{{Key: queryRequest.OrderBy, Value: sortOrder}})
+		}
+
+		for _, q := range queryRequest.Filters {
+			// q.Key format is camelCase, convert to snake_case
+			q.Key = utilities.ToSnakeCase(q.Key)
+
+			// loop over filter criteria string map
+			for k, v := range domain.FilterCriteriaString {
+				if q.Filter == k {
+					switch v {
+					case "equal":
+						if q.Key == "id" {
+							id, err := primitive.ObjectIDFromHex(q.Value[0])
+							if err != nil {
+								c.Status(fiber.StatusBadRequest).JSON(domain.Response{
+									Code:    fiber.StatusBadRequest,
+									Status:  "error",
+									Message: "Invalid ID",
+								})
+							} else {
+								query["_id"] = id
+							}
+						} else {
+							value, err := strconv.ParseInt(q.Value[0], 10, 64)
+							if err == nil {
+								query[q.Key] = value
+							} else {
+								query[q.Key] = q.Value[0]
+							}
+						}
+					case "notEqual":
+						if q.Key == "id" {
+							id, err := primitive.ObjectIDFromHex(q.Value[0])
+							if err != nil {
+								c.Status(fiber.StatusBadRequest).JSON(domain.Response{
+									Code:    fiber.StatusBadRequest,
+									Status:  "error",
+									Message: "Invalid ID",
+								})
+							} else {
+								query["_id"] = bson.M{"$ne": id}
+							}
+						} else {
+							value, err := strconv.ParseInt(q.Value[0], 10, 64)
+							if err == nil {
+								query[q.Key] = bson.M{"$ne": value}
+							} else {
+								query[q.Key] = bson.M{"$ne": q.Value[0]}
+							}
+						}
+					case "greaterThanOrEqual":
+						value, err := strconv.ParseInt(q.Value[0], 10, 64)
+						if err == nil {
+							query[q.Key] = bson.M{"$gte": value}
+						} else {
+							query[q.Key] = bson.M{"$gte": q.Value[0]}
+						}
+					case "lessThanOrEqual":
+						value, err := strconv.ParseInt(q.Value[0], 10, 64)
+						if err == nil {
+							query[q.Key] = bson.M{"$lte": value}
+						} else {
+							query[q.Key] = bson.M{"$lte": q.Value[0]}
+						}
+					case "greaterThan":
+						value, err := strconv.ParseInt(q.Value[0], 10, 64)
+						if err == nil {
+							query[q.Key] = bson.M{"$gt": value}
+						} else {
+							query[q.Key] = bson.M{"$gt": q.Value[0]}
+						}
+					case "lessThan":
+						value, err := strconv.ParseInt(q.Value[0], 10, 64)
+						if err == nil {
+							query[q.Key] = bson.M{"$lt": value}
+						} else {
+							query[q.Key] = bson.M{"$lt": q.Value[0]}
+						}
+					case "in":
+						if q.Key == "id" {
+							values := make([]primitive.ObjectID, len(q.Value))
+							for i, str := range q.Value {
+								id, err := primitive.ObjectIDFromHex(str)
+								if err != nil {
+									// handle error, for example log it and continue to the next iteration
+									fmt.Println("error parsing id", err.Error())
+									continue
+								}
+								values[i] = id
+							}
+							query["_id"] = bson.M{"$in": values}
+						} else {
+							// assuming q.Value is a slice of strings
+							valuesInt := make([]int64, len(q.Value))
+							valuesStr := make([]string, len(q.Value))
+							hasIntValues := false
+							for i, str := range q.Value {
+								val, err := strconv.ParseInt(str, 10, 64)
+								if err != nil {
+									valuesStr[i] = str
+								} else {
+									valuesInt[i] = val
+									hasIntValues = true
+								}
+							}
+
+							if hasIntValues {
+								query[q.Key] = bson.M{"$in": valuesInt}
+							} else {
+								query[q.Key] = bson.M{"$in": valuesStr}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		c.Locals("query", query)
+		c.Locals("findOptions", findOptions)
+		c.Locals("page", queryRequest.Page)
+		c.Locals("limit", queryRequest.Limit)
+		return c.Next()
+	}
+}
+
 func parseQueriesToFilters(queries map[string]string) ([]domain.QueryFilter, error) {
 	var filters []domain.QueryFilter
 

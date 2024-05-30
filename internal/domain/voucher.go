@@ -1,6 +1,9 @@
 package domain
 
-import "go.mongodb.org/mongo-driver/bson/primitive"
+import (
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
+)
 
 type Voucher struct {
 	Id               primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
@@ -17,10 +20,12 @@ type Voucher struct {
 
 type VoucherRepository interface {
 	FindByID(id primitive.ObjectID) (*Voucher, error)
+	FindByFilter(query primitive.M, findOptions *options.FindOptions, page int, limit int) ([]*Voucher, int64, int64, int, error)
 	Store(voucher *Voucher) (*Voucher, error)
 }
 
 type VoucherService interface {
+	FindByFilter(query primitive.M, findOptions *options.FindOptions, page int, limit int) ([]*Voucher, int64, int64, int, error)
 	Store(voucher *Voucher) (*Voucher, error)
 }
 
