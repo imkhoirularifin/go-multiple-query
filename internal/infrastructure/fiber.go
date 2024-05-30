@@ -2,7 +2,6 @@ package infrastructure
 
 import (
 	"fmt"
-	"go-multiple-query/internal/docs"
 	"go-multiple-query/internal/voucher"
 	"go-multiple-query/pkg/xlogger"
 
@@ -32,7 +31,6 @@ func Run() {
 
 	// Grouping Routes
 	api := app.Group("/api/v1")
-	docs.NewHttpHandler(api.Group("/docs"))
 	voucher.NewHTTPHandler(api.Group("/vouchers"), voucherService, db, logger)
 
 	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)

@@ -5,9 +5,7 @@ import (
 	"errors"
 	"go-multiple-query/internal/domain"
 	"math"
-	"reflect"
 
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -82,39 +80,6 @@ func (m *mongodbRepository) FindByID(id primitive.ObjectID) (*domain.Voucher, er
 	}
 
 	return &voucher, nil
-}
-
-// Count implements domain.VoucherRepository.
-func (m *mongodbRepository) Count(filter domain.VoucherFilter) (int64, error) {
-	var count int64
-
-	coll := m.db.Collection("vouchers")
-
-	// loop over filter and build query
-	query := bson.M{}
-	v := reflect.ValueOf(filter)
-	typeOfFilter := v.Type()
-
-	for i := 0; i < v.NumField(); i++ {
-		fieldName := typeOfFilter.Field(i).Name
-
-		// Skip pagination and sorting
-		if fieldName == "Page" || fieldName == "Size" || fieldName == "OrderBy" || fieldName == "SortOrder" {
-			continue
-		}
-
-		fieldValue := v.Field(i).Interface()
-		if str, ok := fieldValue.(string); ok && str != "" {
-			query[typeOfFilter.Field(i).Tag.Get("query")] = fieldValue
-		}
-	}
-
-	count, err := coll.CountDocuments(context.TODO(), query)
-	if err != nil {
-		return 0, err
-	}
-
-	return count, nil
 }
 
 // Store implements domain.VoucherRepository.

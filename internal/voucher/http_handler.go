@@ -25,8 +25,7 @@ func NewHTTPHandler(r fiber.Router, voucherService domain.VoucherService, db *mo
 	}
 
 	r.Post("/", validation.New[domain.StoreVoucherRequest](), handler.Store)
-	r.Get("/filter", filter.FilterMiddleware[domain.Voucher](db, "vouchers"), handler.FindWithFilter)
-	r.Get("/filterv2", filter.FilterMiddlewareV2(), handler.FindWithFilterV2)
+	r.Get("/filter", filter.FilterMiddleware(), handler.FindWithFilter)
 }
 
 // Store handles the store voucher request.
@@ -63,28 +62,6 @@ func (h *httpHandler) Store(c *fiber.Ctx) error {
 }
 
 func (h *httpHandler) FindWithFilter(c *fiber.Ctx) error {
-	entities := utilities.ExtractEntityesFromFilter[[]domain.Voucher](c)
-
-	// get totalItem, nextCursor and maxPage from locals
-	totalItem := c.Locals("totalItem").(int64)
-	nextCursor := c.Locals("nextCursor").(int64)
-	maxPage := c.Locals("maxPage").(int)
-
-	if int(nextCursor) > 0 && int(nextCursor) <= maxPage {
-		c.Set("X-Cursor", strconv.Itoa(int(nextCursor)))
-	}
-	c.Set("X-Total-Count", strconv.Itoa(int(totalItem)))
-	c.Set("X-Max-Page", strconv.Itoa(maxPage))
-
-	return c.Status(fiber.StatusOK).JSON(domain.Response{
-		Code:    fiber.StatusOK,
-		Status:  "success",
-		Message: "Vouchers have been fetched successfully",
-		Data:    entities,
-	})
-}
-
-func (h *httpHandler) FindWithFilterV2(c *fiber.Ctx) error {
 	query, findOptions, page, limit := utilities.ExtractQueryAndFindOptions(c)
 
 	vouchers, totalItem, nextCursor, maxPage, err := h.voucherService.FindByFilter(query, findOptions, page, limit)
