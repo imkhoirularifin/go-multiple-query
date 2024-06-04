@@ -23,7 +23,7 @@ func FilterMiddleware() fiber.Handler {
 
 		queryFilters, err := parseQueriesToFilters(queries)
 		if err != nil {
-			return errorResponse(c, fiber.StatusBadRequest, "invalid query key", err)
+			return errorResponse(c, fiber.StatusBadRequest, "Invalid query key", err)
 		}
 
 		queryRequest.Filters = queryFilters
@@ -40,7 +40,7 @@ func FilterMiddleware() fiber.Handler {
 
 		queryRequest.OrderBy, queryRequest.SortOrder, err = parseQueryOrder(queries)
 		if err != nil {
-			return errorResponse(c, fiber.StatusBadRequest, "Invalid order query", err)
+			return errorResponse(c, fiber.StatusBadRequest, "Invalid sortOrder query", err)
 		}
 
 		query, err := buildQuery(queryRequest)
@@ -111,66 +111,72 @@ func buildQuery(request domain.QueryRequest) (bson.M, error) {
 		q.Key = utilities.ToSnakeCase(q.Key)
 		for k, v := range domain.FilterCriteriaString {
 			if q.Filter == k {
+				if _, ok := query[q.Key]; !ok {
+					query[q.Key] = bson.M{}
+				}
+
 				switch v {
 				case "equal":
 					if q.Key == "id" {
 						id, err := primitive.ObjectIDFromHex(q.Value[0])
 						if err != nil {
-							return nil, errors.New("invalid ID")
+							return bson.M{}, errors.New("invalid ID")
 						} else {
+							delete(query, "id")
 							query["_id"] = id
 						}
 					} else {
 						value, err := strconv.ParseInt(q.Value[0], 10, 64)
 						if err == nil {
-							query[q.Key] = value
+							query[q.Key].(bson.M)["$eq"] = value
 						} else {
-							query[q.Key] = q.Value[0]
+							query[q.Key].(bson.M)["$eq"] = q.Value[0]
 						}
 					}
 				case "notEqual":
 					if q.Key == "id" {
 						id, err := primitive.ObjectIDFromHex(q.Value[0])
 						if err != nil {
-							return nil, errors.New("invalid ID")
+							return bson.M{}, errors.New("invalid ID")
 						} else {
+							delete(query, "id")
 							query["_id"] = bson.M{"$ne": id}
 						}
 					} else {
 						value, err := strconv.ParseInt(q.Value[0], 10, 64)
 						if err == nil {
-							query[q.Key] = bson.M{"$ne": value}
+							query[q.Key].(bson.M)["$ne"] = value
 						} else {
-							query[q.Key] = bson.M{"$ne": q.Value[0]}
+							query[q.Key].(bson.M)["$ne"] = q.Value[0]
 						}
 					}
 				case "greaterThanOrEqual":
 					value, err := strconv.ParseInt(q.Value[0], 10, 64)
-					if err == nil {
-						query[q.Key] = bson.M{"$gte": value}
+					if err != nil {
+						return bson.M{}, errors.New("invalid value in greaterThanOrEqual query, value must be integer")
 					} else {
-						query[q.Key] = bson.M{"$gte": q.Value[0]}
+						query[q.Key].(bson.M)["$gte"] = value
 					}
 				case "lessThanOrEqual":
 					value, err := strconv.ParseInt(q.Value[0], 10, 64)
-					if err == nil {
-						query[q.Key] = bson.M{"$lte": value}
+					if err != nil {
+						return bson.M{}, errors.New("invalid value in lessThanOrEqual query, value must be integer")
 					} else {
-						query[q.Key] = bson.M{"$lte": q.Value[0]}
+						query[q.Key].(bson.M)["$lte"] = value
 					}
 				case "greaterThan":
 					value, err := strconv.ParseInt(q.Value[0], 10, 64)
-					if err == nil {
-						query[q.Key] = bson.M{"$gt": value}
+					if err != nil {
+						return bson.M{}, errors.New("invalid value in greaterThan query, value must be integer")
 					} else {
-						query[q.Key] = bson.M{"$gt": q.Value[0]}
+						query[q.Key].(bson.M)["$gt"] = value
 					}
 				case "lessThan":
 					value, err := strconv.ParseInt(q.Value[0], 10, 64)
-					if err == nil {
-						query[q.Key] = bson.M{"$lt": value}
+					if err != nil {
+						return bson.M{}, errors.New("invalid value in lessThan query, value must be integer")
 					} else {
-						query[q.Key] = bson.M{"$lt": q.Value[0]}
+						query[q.Key].(bson.M)["$lt"] = value
 					}
 				case "in":
 					if q.Key == "id" {
@@ -178,10 +184,11 @@ func buildQuery(request domain.QueryRequest) (bson.M, error) {
 						for i, str := range q.Value {
 							id, err := primitive.ObjectIDFromHex(str)
 							if err != nil {
-								return nil, errors.New("invalid ID")
+								return bson.M{}, errors.New("invalid ID")
 							}
 							values[i] = id
 						}
+						delete(query, "id")
 						query["_id"] = bson.M{"$in": values}
 					} else {
 						valuesInt := make([]int64, len(q.Value))
@@ -198,9 +205,9 @@ func buildQuery(request domain.QueryRequest) (bson.M, error) {
 						}
 
 						if hasIntValues {
-							query[q.Key] = bson.M{"$in": valuesInt}
+							query[q.Key].(bson.M)["$in"] = valuesInt
 						} else {
-							query[q.Key] = bson.M{"$in": valuesStr}
+							query[q.Key].(bson.M)["$in"] = valuesStr
 						}
 					}
 				}
@@ -233,6 +240,10 @@ func parseQueriesToFilters(queries map[string]string) ([]domain.QueryFilter, err
 				criteria = k
 				break
 			}
+		}
+
+		if criteria == domain.NoMatch {
+			return nil, fmt.Errorf("invalid filter criteria: %s", criteriaStr)
 		}
 
 		var values []string

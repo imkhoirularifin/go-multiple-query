@@ -19,49 +19,41 @@ type mongodbRepository struct {
 func (m *mongodbRepository) FindByFilter(query primitive.M, findOptions *options.FindOptions, page int, limit int) ([]*domain.Voucher, int64, int64, int, error) {
 	coll := m.db.Collection("vouchers")
 	var cursor *mongo.Cursor
-	err := error(nil)
+	var err error
 	vouchers := []*domain.Voucher{}
 	nextCursor := int64(page + 1)
 	maxPage := 0
 
-	if findOptions != nil {
-		cursor, err = coll.Find(context.TODO(), query, findOptions)
-		if err != nil {
-			return nil, 0, 0, 0, err
-		}
-	} else {
-		cursor, err = coll.Find(context.TODO(), query)
-		if err != nil {
-			return nil, 0, 0, 0, err
-		}
+	totalItem, err := coll.CountDocuments(context.TODO(), query)
+	if err != nil {
+		return nil, 0, 0, 0, err
 	}
 
-	defer cursor.Close(context.Background())
+	if findOptions != nil {
+		cursor, err = coll.Find(context.TODO(), query, findOptions)
+	} else {
+		cursor, err = coll.Find(context.TODO(), query)
+	}
+	if err != nil {
+		return nil, 0, 0, 0, err
+	}
+
+	defer cursor.Close(context.TODO())
 
 	for cursor.Next(context.TODO()) {
 		var voucher domain.Voucher
-
-		err := cursor.Decode(&voucher)
-		if err != nil {
-			return nil, 0, 0, 0, err
+		if err := cursor.Decode(&voucher); err != nil {
+			continue
 		}
-
 		vouchers = append(vouchers, &voucher)
 	}
 
-	// Check for any errors during cursor iteration
 	if err := cursor.Err(); err != nil {
 		return nil, 0, 0, 0, err
 	}
 
 	if len(vouchers) == 0 {
 		return nil, 0, 0, 0, errors.New("no vouchers found")
-	}
-
-	// get total item
-	totalItem, err := coll.CountDocuments(context.TODO(), query)
-	if err != nil {
-		return nil, 0, 0, 0, err
 	}
 
 	maxPage = int(math.Ceil(float64(totalItem) / float64(limit)))

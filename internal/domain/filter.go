@@ -3,7 +3,8 @@ package domain
 type FilterCriteria int
 
 const (
-	Equal FilterCriteria = iota
+	NoMatch FilterCriteria = iota // noMatch is the default value if no filter is applied
+	Equal
 	NotEqual
 	GreaterThanOrEqual
 	LessThanOrEqual
@@ -13,6 +14,7 @@ const (
 )
 
 var FilterCriteriaString = map[FilterCriteria]string{
+	NoMatch:            "noMatch",
 	Equal:              "equal",
 	NotEqual:           "notEqual",
 	GreaterThanOrEqual: "greaterThanOrEqual",
