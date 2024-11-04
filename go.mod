@@ -9,7 +9,8 @@ require (
 	github.com/gofiber/contrib/swagger v1.1.1
 	github.com/gofiber/fiber/v2 v2.52.2
 	github.com/joho/godotenv v1.5.1
-	github.com/rs/zerolog v1.32.0
+  dependabot/go_modules/github.com/go-playground/validator/v10-10.22.0
+	github.com/rs/zerolog v1.33.0
 	github.com/stretchr/testify v1.9.0
 	github.com/swaggo/swag v1.16.3
 	go.mongodb.org/mongo-driver v1.15.0
