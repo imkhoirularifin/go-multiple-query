@@ -4,11 +4,13 @@ go 1.21
 
 require (
 	github.com/caarlos0/env/v10 v10.0.0
+  dependabot/go_modules/gorm.io/driver/mysql-1.5.7
 	github.com/go-playground/validator/v10 v10.22.0
 	github.com/gofiber/contrib/fiberzerolog v0.2.3
 	github.com/gofiber/contrib/swagger v1.1.1
 	github.com/gofiber/fiber/v2 v2.52.2
 	github.com/joho/godotenv v1.5.1
+  dependabot/go_modules/gorm.io/driver/mysql-1.5.7
   dependabot/go_modules/github.com/go-playground/validator/v10-10.22.0
 	github.com/rs/zerolog v1.33.0
 	github.com/stretchr/testify v1.9.0
